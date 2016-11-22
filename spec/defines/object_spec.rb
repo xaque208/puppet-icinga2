@@ -224,11 +224,12 @@ describe('icinga2::object', :type => :define) do
         .with_content(/foo = \{{2} unparsed string \}{2}\n/) }
     end
 
+
     context "#{os} with attrs => { foo => function (bar) use (var) { unparsed string } }" do
       let(:params) { {:attrs => { 'foo' => 'function  (bar) use (var)  {unparsed string}' }, :object_type => 'foo', :target => '/bar/baz', :order => '10'} }
 
       it { is_expected.to contain_concat__fragment('icinga2::object::foo::bar')
-        .with_content(/foo = function \("bar"\) use \(var\) \{{1} unparsed string \}{1}\n/) }
+        .with_content(/foo = function \("bar"\) use \(var\) \{ unparsed string \}\n/) }
     end
   end
 end
@@ -467,4 +468,12 @@ describe('icinga2::object', :type => :define) do
     it { is_expected.to contain_concat__fragment('icinga2::object::foo::bar')
       .with_content(/foo = \{{2} unparsed string \}{2}\r\n/) }
   end
+
+
+    context "Windows 2012 R2 with attrs => { foo => function (bar) use (var) { unparsed string } }" do
+      let(:params) { {:attrs => { 'foo' => 'function  (bar) use (var)  {unparsed string}' }, :object_type => 'foo', :target => 'C:/bar/baz', :order => '10'} }
+
+      it { is_expected.to contain_concat__fragment('icinga2::object::foo::bar')
+        .with_content(/foo = function \("bar"\) use \(var\) \{ unparsed string \}\r\n/) }
+    end
 end

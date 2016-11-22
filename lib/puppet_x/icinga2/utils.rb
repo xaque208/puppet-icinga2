@@ -36,11 +36,15 @@
 #
 #   attrs => true or  attr => 'true'
 #
-# In Icinga you can write your own function with {{ .. }}. For puppet use:
+# In Icinga you can write your own functions. For puppet use:
 #
 #   attrs => '{{ ... }}'
 #
-# The parser calculates which parts of a string has to quoted and which not.
+#   attrs => 'fct(a,b) use (c) { ... }'
+#
+# The individual parts of functions aren't parsed.
+#
+# IMPORTANT: The parser calculates which parts of a string has to quoted and which not.
 #
 # All fragments are quoted expect the following:
 #
@@ -105,20 +109,18 @@ module Puppet
           if row =~ /^(.+)\s([\+-]|\*|\/|==|!=|&&|\|{2}|in)\s(.+)$/
             result += "%s %s %s" % [ parse($1), $2, parse($3) ]
           else
-             # fct(a,b) use (c) {} (If this is a function, we don't want to further parse the individual parts
-            # since they're likely to be variables… not string arguments?) (Do we expect the user to know what they're doing?)
-            # We could maybe have % [ $1.split().map ], but not for $2 or $3, since that would defeat the purpose of this...
-            if row =~ /^(?:.+)\((.*)\)\s*use\s*\((.*)\)\s*{(.*)}$/
-              result += "function (%s) use (%s) { %s }" % [ $1.split(',').map {|x| parse(x.lstrip)}.join(', '), $2.strip, $3.strip ]
-            elsif row =~ /^(.+)\((.*)$/
-              result += "%s(%s" % [ $1, $2.split(',').map {|x| parse(x.lstrip)}.join(', ') ]
-            elsif row =~ /^(.*)\)$/
-              result += "%s)" % [ $1.split(',').map {|x| parse(x.lstrip)}.join(', ') ]
-            elsif row =~ /^\((.*)$/
-              result += "(%s" % [ parse($1) ]
-            else
-              result += value_types(row.to_s)
-            end
+            result += case row
+              when /^(?:.+)\((.*)\)\s*use\s*\((.*)\)\s*{(.*)}$/ then
+                "function (%s) use (%s) { %s }" % [ $1.split(',').map {|x| parse(x.lstrip)}.join(', '), $2.strip, $3.strip ]
+              when /^(.+)\((.*)$/ then
+                "%s(%s" % [ $1, $2.split(',').map {|x| parse(x.lstrip)}.join(', ') ]
+              when /^(.*)\)$/ then
+                "%s)" % [ $1.split(',').map {|x| parse(x.lstrip)}.join(', ') ]
+              when /^\((.*)$/ then
+                 "(%s" % [ parse($1) ]
+              else
+                 value_types(row.to_s)
+              end
           end
 
           return result.gsub(/" in "/, ' in ')
