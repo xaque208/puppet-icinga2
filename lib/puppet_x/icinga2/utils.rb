@@ -106,12 +106,14 @@ module Puppet
         def self.parse(row)
           result = ''
 
-          if row =~ /^(.+)\s([\+-]|\*|\/|==|!=|&&|\|{2}|in)\s(.+)$/
+          if row =~ /^(?:.+)\((.*)\)\s*use\s*\((.*)\)\s*{(.*)}$/
+            result += "function(%s) use (%s) { %s }" % [ $1.split(',').map {|x| parse(x.lstrip)}.join(', '), $2.strip, $3.strip ]
+          elsif row =~ /^(.+)\s([\+-]|\*|\/|==|!=|&&|\|{2}|in)\s(.+)$/
             result += "%s %s %s" % [ parse($1), $2, parse($3) ]
           else
             result += case row
-              when /^(?:.+)\((.*)\)\s*use\s*\((.*)\)\s*{(.*)}$/ then
-                "function (%s) use (%s) { %s }" % [ $1.split(',').map {|x| parse(x.lstrip)}.join(', '), $2.strip, $3.strip ]
+              #when /^(?:.+)\((.*)\)\s*use\s*\((.*)\)\s*{(.*)}$/ then
+              #  "function (%s) use (%s) { %s }" % [ $1.split(',').map {|x| parse(x.lstrip)}.join(', '), $2.strip, $3.strip ]
               when /^(.+)\((.*)$/ then
                 "%s(%s" % [ $1, $2.split(',').map {|x| parse(x.lstrip)}.join(', ') ]
               when /^(.*)\)$/ then
