@@ -5,4 +5,5 @@ modules/
 spec/fixtures/
 .DS_Store
 Gemfile.lock
-.bundle/
+.bundle
+vendor/
